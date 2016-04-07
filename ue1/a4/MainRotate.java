@@ -1,18 +1,28 @@
 import lejos.nxt.Motor;
+import lejos.robotics.navigation.DifferentialPilot;
 
 public class MainRotate {
     public static void main(String[] args) throws Exception {
-        /*
-        Motor.A.setSpeed(180);
-        Motor.C.setSpeed(180);
-        Motor.A.forward();
-        Motor.C.backward();
-        Thread.sleep(1000);
-        Motor.A.stop();
-        Motor.C.stop();
-        */
-        RoboUtil.driveForCentimeters(10);
-        RoboUtil.rotateForDegrees(360);
-
+        DifferentialPilot pilot = new DifferentialPilot(DifferentialPilot.WHEEL_SIZE_NXT1, 11.3, Motor.C, Motor.A);
+        pilot.travel(50);
+        Thread.sleep(5000);
+        pilot.travel(-50);
+        Thread.sleep(5000);
+        pilot.rotate(90);
+        Thread.sleep(5000);
+        pilot.rotate(-90);
+        Thread.sleep(5000);
+        pilot.rotate(180);
+        Thread.sleep(5000);
+        pilot.rotate(-180);
+        Thread.sleep(5000);
+        pilot.rotate(270);
+        Thread.sleep(5000);
+        pilot.rotate(-270);
+        Thread.sleep(5000);
+        pilot.rotate(360);
+        Thread.sleep(5000);
+        pilot.rotate(-360);
+        Thread.sleep(5000);
     }
 }
