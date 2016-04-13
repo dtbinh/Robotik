@@ -5,7 +5,8 @@ import lejos.nxt.Sound;
 public class House {
     public static void main(String args[]) {
         DifferentialPilot pilot = new DifferentialPilot(DifferentialPilot.WHEEL_SIZE_NXT1, 11.3, Motor.C, Motor.A);
-        System.out.println(DifferentialPilot.WHEEL_SIZE_NXT2);
+        pilot.setTravelSpeed(25);
+        pilot.setRotateSpeed(90);
         pilot.travel(50);                   // Move forward
         pilot.rotate(-135);                 // Turn to diagonal
         pilot.travel(50 * Math.sqrt(2));    // Drive diagonal
@@ -23,6 +24,7 @@ public class House {
         pilot.travel(50);                   // Drive side
         pilot.rotate(180);                  // Turn around
         pilot.travel(50);                   // Drive side
+        pilot.rotate(-90);                  // Turn to start
         Sound.beep();                       // Beep
     }
 }

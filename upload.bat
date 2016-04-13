@@ -5,7 +5,7 @@ IF %ERRORLEVEL% NEQ 0 (
     goto :end
 )
 echo Linking %1.class to %1.nxj
-call nxjlink -o %1.nxj %1
+call nxjlink -v -o %1.nxj %1 >> linker.out
 IF %ERRORLEVEL% NEQ 0 (
     echo Could not link to %1.nxj properly
     goto :end
