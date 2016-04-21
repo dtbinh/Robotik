@@ -1,5 +1,5 @@
 public abstract class State {
-    private LineFollower context;
+    protected LineFollower context;
 
     public State(LineFollower context) {
         this.context = context;

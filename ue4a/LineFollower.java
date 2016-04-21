@@ -1,30 +1,30 @@
 import lejos.nxt.SensorPort;
 import lejos.nxt.Motor;
 import lejos.nxt.LightSensor;
-import lejos.nxt.Button;
+import lejos.robotics.navigation.DifferentialPilot;
 import lejos.nxt.comm.RConsole;
 
 public class LineFollower {
     private LightSensor lightSensor;
     private DifferentialPilot pilot;
     private static SensorPort scannerPort = SensorPort.S4;
-    private static Motor scannerMotor = Motor.B;
-    private static Motor leftMotor = Motor.C;
-    private static Motor rightMotor = Motor.A;
 
-    private int whiteValue = 255;
-    private int blackValue = 0;
+    private int whiteValue = 0;
+    private int blackValue = 255;
 
-    private State LineFindState lifist;
-    private State ScanningState scanst;
-    private State AdjustingState adjust;
-    private State LineFollowingState lifost;
+    private State lifist;
+    private State scanst;
+    private State adjust;
+    private State lifost;
 
     public void runMain() {
         lifist = new LineFindingState(this);
         scanst = new ScanningState(this);
-        adjust = new AdjustingState(this);
-        lifost = new LineFollowingState(this);
+        //adjust = new AdjustingState(this);
+        //lifost = new LineFollowingState(this);
+        lifist.enter();
+        RConsole.println(whiteValue + "");
+        RConsole.println(blackValue + "");
     }
 
     public static void main(String[] args) {
@@ -52,7 +52,7 @@ public class LineFollower {
         this.blackValue = blackValue;
     }
 
-    public void getBlackValue() {
+    public int getBlackValue() {
         return this.blackValue;
     }
 
