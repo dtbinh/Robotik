@@ -3,7 +3,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-
 public class LineFinder {
 	
 	private static double range = 100; //[-50,50]
