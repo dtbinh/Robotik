@@ -34,4 +34,13 @@ public class Line {
 	public String toString(){
 		return a+"*x+"+b;
 	}
+	
+	public double getAngle(){
+		return Math.atan(a);
+	}
+	
+	public double getXAxisIntersect(){
+		//0 = ax+b <=> x=-b/a
+		return -b/a;
+	}
 }

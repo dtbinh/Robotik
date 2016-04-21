@@ -21,22 +21,36 @@ public class LineFinder {
 	public double findLineAngle(){
 		//drive forward
 		//scan
-		//int[] scan0 = {25,24,21,24,25,21,28,40,45,58,51};
-		int[] scan0 = {26,23,28,40,46,59, 52,44,38,29,21,24};
+		int[] scan0 = {66, 66, 66, 66, 65, 65, 65, 65, 64, 63, 62, 61, 61, 62, 63, 63, 62, 58, 53, 51, 52, 53};
 		//drive back
 		//scan
-		int[] scan1 = {26,23,28,40,46,59, 52,44,38,29,21,24};
+		int[] scan1 = {35, 36, 38, 40, 35, 36, 38, 40, 35, 36, 38, 40, 35, 36, 38, 40, 35, 36, 38, 40};
 		//drive back
 		//scan
-		//int[] scan2 = {51,60,46,37,28,23,21,23,21,24};
-		int[] scan2 = {26,23,28,40,46,59, 52,44,38,29,21,24};
+		int[] scan2 = {66, 66, 66, 66, 65, 65, 65, 64, 63, 62, 61, 61, 62, 66, 66, 66, 66, 65, 65, 65, 64};
 		
 		int[][] scans = new int[3][];
 		scans[0] = scan0;
 		scans[1] = scan1;
 		scans[2] = scan2;
+		
 		List<List<Point>> normalizedPoints = normalize(scans);
 		Point[] maxValues = findMax(normalizedPoints);
+		
+		//Gerade senkrecht zu roborter
+		if(!valuesGood(scans)){
+			int minInd = 0;
+			for(int i = 1; i<maxValues.length;i++){
+				if(maxValues[i].y<maxValues[minInd].y){
+					minInd = i;
+				}
+			}
+			double yAxix = 50-minInd*100/(maxValues.length-1);
+			Line l = new Line(0, yAxix);
+			System.out.println(l);
+			return 0;
+		}
+		
 		maxValues[0].y = 50;
 		maxValues[1].y = 0;
 		maxValues[2].y = -50;
@@ -56,7 +70,6 @@ public class LineFinder {
 	
 	private List<List<Point>> normalize(int[][] scans){
 		List<List<Point>> result = new LinkedList<List<Point>>();
-		
 		
 		//for each scan
 		for(int[] scan : scans){
@@ -94,14 +107,17 @@ public class LineFinder {
 		Point[] maxValues = new Point[points.size()];
 		int i = 0;
 		for(List<Point> l : points){
-			Point currentMax = new Point(0, Double.MIN_VALUE);
+			Point currentMax = new Point(0, Double.MAX_VALUE);
 			for(Point p : l){
-				if(p.y > currentMax.y) currentMax= p;
+				if(p.y < currentMax.y) 
+					currentMax= p;
 			}
 			maxValues[i++] = currentMax;
 		}
 		return maxValues;
 	}
+	
+	
 	
 	private void checkSameValues(Point[] arr){
 		for (int i = 0; i < arr.length; i++) {
@@ -115,6 +131,31 @@ public class LineFinder {
 		}
 	}
 	
+	private boolean valuesGood(int[][] scan){
+		for(int[] arr : scan){
+			double ew = getEW(arr);
+			double stdDev = getStdDev(arr, ew);
+			if(stdDev < 15) return false;
+		}
+		return true;
+	}
+	
+	private double getEW(int [] scan){
+		int sum = 0;
+		for(int i : scan){
+			sum+=i;
+		}
+		return (double)sum/scan.length;
+	}
+	
+	private double getStdDev(int [] scan, double ew){
+		double sum = 0;
+		for(double d : scan){
+			sum += (d-ew)*(d-ew);
+		}
+		return Math.sqrt(sum);
+	}
+	 
 	public static void main(String[] args){
 		LineFinder f  = new LineFinder();
 		f.findLineAngle();
