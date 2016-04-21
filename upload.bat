@@ -1,5 +1,5 @@
 echo Compiling %1.java
-call nxjc %1.java
+call nxjc -Xlint:deprecation %1.java
 IF %ERRORLEVEL% NEQ 0 (
     echo Could not compile %1.java properly
     goto :end

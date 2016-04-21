@@ -24,7 +24,7 @@ public class SensorTest implements Runnable {
     public void selfmain() {
         ls = new LightSensor(SensorPort.S1);
         ls.setFloodlight(true);
-        Motor.B.setSpeed(900);
+        Motor.B.setSpeed(20);
         Thread t = new Thread(this);
         Motor.B.rotate(-1080, false);
         t.start();
