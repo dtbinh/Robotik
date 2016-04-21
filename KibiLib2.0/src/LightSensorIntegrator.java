@@ -1,6 +1,6 @@
 
 public class LightSensorIntegrator {
-	public int getLightValue(int[] sensorValues){
+	public static double getLightValue(int[] sensorValues){
 		int leftIntegral = 0;
 		int rightIntegral = 0;
 		int mid = sensorValues.length/2;
@@ -10,6 +10,6 @@ public class LightSensorIntegrator {
 		for (int i = mid+1; i < sensorValues.length; i++) {
 			rightIntegral+=sensorValues[i];
 		}
-		return leftIntegral - rightIntegral;
+		return 1.0 * (leftIntegral - rightIntegral) / sensorValues.length;
 	}
 }

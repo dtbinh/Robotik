@@ -2,7 +2,6 @@ import java.io.BufferedOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.robotics.navigation.DifferentialPilot;
@@ -16,23 +15,58 @@ public class LineFinder {
 
 	private BufferedOutputStream bos;
 
-	private LightSensor lightSensor;
+	private static LightSensor lightSensor = new LightSensor(SensorPort.S4);
 	private DifferentialPilot pilot;
-	private int isLeft = 1;
+	private static int isLeft = 1;
 
 	public LineFinder() {
-		lightSensor = new LightSensor(SensorPort.S4);
 		pilot = new DifferentialPilot(DifferentialPilot.WHEEL_SIZE_NXT1, 11.3,
 				Motor.C, Motor.A);
 	}
 
-	public int[] scanLight() {
+    public LineFinder(boolean ignore) {
+    }
+
+    public Line getLine(int[][] scans) {
+		List<List<Point>> normalizedPoints = normalize(scans);
+		Point[] maxValues = findMax(normalizedPoints);
+
+		// Gerade senkrecht zu roborter
+		if (!valuesGood(scans)) {
+			int minInd = 0;
+			for (int i = 1; i < maxValues.length; i++) {
+				if (maxValues[i].y < maxValues[minInd].y) {
+					minInd = i;
+				}
+			}
+			double yAxix = 50 - minInd * 100 / (maxValues.length - 1);
+			Line l = new Line(0, yAxix);
+			return l;
+		}
+
+		maxValues[0].y = 50;
+		maxValues[1].y = 0;
+		maxValues[2].y = -50;
+		checkSameValues(maxValues);
+		plot(maxValues);
+
+		List<Point> pointSet = new ArrayList<Point>();
+		for (Point p : maxValues)
+			pointSet.add(p);
+
+		LeastSquaresCalculator c = new LeastSquaresCalculator(pointSet);
+		Line l = c.fitLine();
+
+		return l;
+    }
+
+	public static int[] scanLight() {
 		Motor.B.rotate(measureDegrees * isLeft, true);
 		ArrayList<Integer> values = new ArrayList<Integer>();
 		while (Motor.B.isMoving()) {
 			values.add(lightSensor.readValue());
 			try {
-				Thread.sleep(100);
+				Thread.sleep(5);
 			} catch (Exception e) {
 			}
 		}
@@ -61,7 +95,7 @@ public class LineFinder {
 	 */
 
 	public Line findLine() {
-		Motor.B.setSpeed(45);
+		Motor.B.setSpeed(100);
 		Motor.B.rotate(measureDegrees / 2);
 		isLeft = -1;
 		pilot.setTravelSpeed(5);
@@ -76,40 +110,7 @@ public class LineFinder {
 		scans[0] = scan0;
 		scans[1] = scan1;
 		scans[2] = scan2;
-
-		List<List<Point>> normalizedPoints = normalize(scans);
-		Point[] maxValues = findMax(normalizedPoints);
-
-		// Gerade senkrecht zu roborter
-		if (!valuesGood(scans)) {
-			int minInd = 0;
-			for (int i = 1; i < maxValues.length; i++) {
-				if (maxValues[i].y < maxValues[minInd].y) {
-					minInd = i;
-				}
-			}
-			double yAxix = 50 - minInd * 100 / (maxValues.length - 1);
-			Line l = new Line(0, yAxix);
-			System.out.println(l);
-			return l;
-		}
-
-		maxValues[0].y = 50;
-		maxValues[1].y = 0;
-		maxValues[2].y = -50;
-		checkSameValues(maxValues);
-		plot(maxValues);
-
-		List<Point> pointSet = new ArrayList<Point>();
-		for (Point p : maxValues)
-			pointSet.add(p);
-
-		LeastSquaresCalculator c = new LeastSquaresCalculator(pointSet);
-		Line l = c.fitLine();
-		System.out.println(l.toString());
-
-		// plot(normalizedPoints);
-		return l;
+		return getLine(scans);
 	}
 
 	private List<List<Point>> normalize(int[][] scans) {
@@ -176,7 +177,7 @@ public class LineFinder {
 		for (int[] arr : scan) {
 			double ew = getEW(arr);
 			double stdDev = getStdDev(arr, ew);
-			if (stdDev < 15)
+			if (stdDev < 0.5)
 				return false;
 		}
 		return true;
@@ -195,7 +196,7 @@ public class LineFinder {
 		for (double d : scan) {
 			sum += (d - ew) * (d - ew);
 		}
-		return Math.sqrt(sum);
+		return Math.sqrt(sum) / (scan.length-1);
 	}
 
 	public static void main(String[] args) {

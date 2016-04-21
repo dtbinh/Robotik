@@ -50,6 +50,5 @@ public class LeastSquaresCalculator {
 		points.add(new Point(3., -1.));
 		points.add(new Point(4., 1.));
 		LeastSquaresCalculator c = new LeastSquaresCalculator(points);
-		System.out.println(c.fitLine());
 	}
 }

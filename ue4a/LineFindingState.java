@@ -20,6 +20,10 @@ public class LineFindingState extends State {
             }
         }
         context.getPilot().stop();
+        try {Thread.sleep(1000);} catch (Exception e) {}
+        //context.getPilot().setTravelSpeed(1);
+        //context.getPilot().travel(1);
+        //try {Thread.sleep(1000);} catch (Exception e) {}
         context.setBlackValue(ls.readValue());
     }
 
