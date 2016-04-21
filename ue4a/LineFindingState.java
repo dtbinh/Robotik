@@ -13,7 +13,7 @@ public class LineFindingState extends State {
         while (notFound) {
             int value = ls.readValue();
             if (value > context.getWhiteValue()) {
-                context.setWhiteValue(ls.readValue();)
+                context.setWhiteValue(ls.readValue());
             }
             else if (value < 0.75 * context.getWhiteValue()) {
                 notFound = false;
