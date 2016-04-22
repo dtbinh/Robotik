@@ -13,23 +13,36 @@ public class BtNxt implements Runnable{
 	
 	private BTConnection conn;
 	private LinkedList<Integer> q;
+	private LinkedList<BtListener> listener;
+	
+	public interface BtListener{
+		void newValue();
+	}
 	
 	public BtNxt(){
 		q = new LinkedList<Integer>();
 		Bluetooth.setName("Kibi");
+		listener = new LinkedList<BtNxt.BtListener>();
+	}
+	
+	public void addListener(BtListener l){
+		listener.add(l);
 	}
 	
 	public void startCommunication(){
 		new Thread(this).start();
 	}
 
-	public void host(){
-		conn = Bluetooth.waitForConnection(0, NXTConnection.PACKET);
+	public void slave(){
+		conn = Bluetooth.waitForConnection(100, NXTConnection.PACKET);
 	}
 	
-	public void connect(){
-		ArrayList<RemoteDevice> devices = Bluetooth.inquire(1, 0, 0);
-		RemoteDevice d = devices.get(0);
+	public ArrayList<RemoteDevice> getDevices(){
+		ArrayList<RemoteDevice> devices = Bluetooth.inquire(1, 100, 0);
+		return devices;
+	}
+	
+	public void connectTo(RemoteDevice d){
 		conn = Bluetooth.connect(d);
 	}
 	
@@ -60,12 +73,17 @@ public class BtNxt implements Runnable{
 			synchronized (this) {
 				q.add(value);
 			}
+			notifyListener();
 		}
 		//TODO: protokoll mit anderen abstimmen
 	}
 	
+	private void notifyListener(){
+		for(BtListener l : listener)
+			l.newValue();
+	}
+	
 	public static void main(String[] args){
 		BtNxt bt = new BtNxt();
-		bt.host();
 	}
 }
