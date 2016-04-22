@@ -12,9 +12,9 @@ public class ScanningState extends State {
     public void enter() {
     	LineFinder f = new LineFinder();
     	Line l = f.findLine();
-    	pilot.travel(13+3);
-    	pilot.setRotateSpeed(180);
-    	pilot.rotate(l.getAngle());
+    	pilot.travel(8+3);
+    	pilot.setRotateSpeed(90);
+    	pilot.rotate(-(90 - l.getAngle() * 180 / Math.PI));
     }
 
     public void leave() {
