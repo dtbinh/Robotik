@@ -23,6 +23,8 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     private boolean ownTurn;
     private boolean isMaster;
 
+    private int[] fields;
+
     private TicTacToe() {
         btConn = new BtNxt();
         graphicsContext = new Graphics();
@@ -30,6 +32,7 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
 
     public void buttonPressed(Button b) {
         if (b == Button.LEFT) {
+            RConsole.println("Button LEFT, Mode " + mode + ", Index " + selectedIndex);
             switch (mode) {
                 case 0: selectedIndex = (selectedIndex + 1) % 2; drawMasterSlave(); break;
                 case 1: if (devices.size() > 0) {selectedIndex = (selectedIndex - 1 + devices.size()) % devices.size(); drawSelectDevice();} break;
@@ -37,6 +40,7 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
             }
         }
         else if (b == Button.RIGHT) {
+            RConsole.println("Button RIGHT, Mode " + mode + ", Index " + selectedIndex);
             switch (mode) {
                 case 0: selectedIndex = (selectedIndex + 1) % 2; drawMasterSlave(); break;
                 case 1: if (devices.size() > 0) {selectedIndex = (selectedIndex + 1) % devices.size(); drawSelectDevice();} break;
@@ -44,14 +48,12 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
             }
         }
         else if (b == Button.ENTER) {
+            RConsole.println("Button ENTER, Mode " + mode + ", Index " + selectedIndex);
             switch (mode) {
                 case 0: selectMasterSlave(); break;
                 case 1: selectDevice(); break;
                 case 2: submitTurn(); break;
             }
-        }
-        else if (b == Button.ESCAPE) {
-
         }
         else {
         }
@@ -61,6 +63,12 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     }
 
     public void newValue() {
+        if (mode == 2) {
+            if (!ownTurn) {
+                fields[btConn.getNextValue() - 1] = isMaster ? -1 : 1;
+                ownTurn = true;
+            }
+        }
     }
 
     private void selectMasterSlave() {
@@ -105,27 +113,85 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     }
 
     private void selectDevice() {
-        otherDevice = devices.get(selectedIndex);
-        devices = null;
-        btConn.connectTo(otherDevice);
-        btConn.startCommunication();
+        if (isMaster) {
+            otherDevice = devices.get(selectedIndex);
+            devices = null;
+            btConn.connectTo(otherDevice);
+            btConn.startCommunication();
+        }
+        else {
+            btConn.slave();
+            btConn.startCommunication();
+        }
         selectedIndex = 0;
+        fields = new int[9];
         ownTurn = isMaster;
         drawField();
     }
 
+    private void drawErrorMessage(String message) {
+        graphicsContext.clear();
+        graphicsContext.drawString(message, 0, 0, graphicsContext.LEFT);
+    }
+
+    private void drawCross(int x, int y) {
+        graphicsContext.drawLine(WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * x, HEIGHT / 3 * y,
+                                 WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * (x + 1), HEIGHT / 3 * (y + 1));
+        graphicsContext.drawLine(WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * x, HEIGHT / 3 * (y + 1),
+                                 WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * (x + 1), HEIGHT / 3 * y);
+    }
+
+    private void drawCircle(int x, int y) {
+        graphicsContext.drawArc(WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * x, HEIGHT / 3 * y, HEIGHT / 6, HEIGHT / 6, 0, 360);
+    }
+
+    private void drawRect(int x, int y) {
+        graphicsContext.drawRoundRect(WIDTH / 2 - HEIGHT / 2 + HEIGHT / 3 * x, HEIGHT / 3 * y, HEIGHT / 6, HEIGHT / 6, HEIGHT / 10, HEIGHT / 10);
+    }
+
     private void drawField() {
+        graphicsContext.clear();
+        graphicsContext.drawLine(WIDTH / 2 - HEIGHT / 6, 0, WIDTH / 2 - HEIGHT / 6, HEIGHT);
+        graphicsContext.drawLine(WIDTH / 2 + HEIGHT / 6, 0, WIDTH / 2 + HEIGHT / 6, HEIGHT);
+        graphicsContext.drawLine(WIDTH / 2 - HEIGHT / 2, HEIGHT / 3, WIDTH / 2 + HEIGHT / 2, HEIGHT / 3);
+        graphicsContext.drawLine(WIDTH / 2 - HEIGHT / 2, 2 * HEIGHT / 3, WIDTH / 2 + HEIGHT / 2, 2 * HEIGHT / 3);
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 3; ++j) {
+                switch (fields[i * 3 + j]) {
+                    case 1: drawCross(j, i);
+                    case -1: drawCircle(j, i);
+                }
+                if (ownTurn && (i * 3 + j) == selectedIndex) {
+                    drawRect(j, i);
+                }
+            }
+        }
+
     }
 
     private void submitTurn() {
+        if (ownTurn) {
+            if (fields[selectedIndex] == 0 && selectedIndex <= 8 && selectedIndex >= 0) {
+                fields[selectedIndex] = isMaster ? 1 : -1;
+                ownTurn = false;
+                btConn.sendValue(selectedIndex + 1);
+            }
+            else {
+                drawErrorMessage("ERROR!");
+            }
+            drawField();
+        }
     }
 
     private void runMain() {
+        for (Button b : Button.BUTTONS) {
+            if (b != Button.ESCAPE) {
+                b.addButtonListener(this);
+            }
+        }
+        btConn.addListener(this);
         mode = 0;
         selectedIndex = 0;
-        for (Button b : Button.BUTTONS) {
-            b.addButtonListener(this);
-        }
         drawMasterSlave();
         Button.ESCAPE.waitForPress();
     }
