@@ -107,6 +107,8 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     private void selectDevice() {
         otherDevice = devices.get(selectedIndex);
         devices = null;
+        btConn.connectTo(otherDevice);
+        btConn.startCommunication();
         selectedIndex = 0;
         ownTurn = isMaster;
         drawField();

@@ -21,7 +21,7 @@ public class BtNxt implements Runnable{
 	
 	public BtNxt(){
 		q = new LinkedList<Integer>();
-		Bluetooth.setName("Kibi");
+		Bluetooth.setFriendlyName("Kibi");
 		listener = new LinkedList<BtNxt.BtListener>();
 	}
 	
@@ -38,7 +38,7 @@ public class BtNxt implements Runnable{
 	}
 	
 	public ArrayList<RemoteDevice> getDevices(){
-		ArrayList<RemoteDevice> devices = Bluetooth.inquire(1, 100, 0);
+		ArrayList<RemoteDevice> devices = Bluetooth.inquire(1, 5, 0);
 		return devices;
 	}
 	
