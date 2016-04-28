@@ -111,10 +111,17 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
                 RConsole.println("Getting new value");
                 int val = btConn.getNextValue();
                 RConsole.println("New value: " + val);
-                fields[val - 1] = -1;
-                ownTurn = true;
-                drawField();
-                checkField();
+                if (fields[val - 1] == 1)
+                    fields[val - 1] = -1;
+                    ownTurn = true;
+                    drawField();
+                    checkField();
+                else {
+                    RConsole.println("Opponent selects blocked field");
+                    for (int i = 0; i < 200; ++i) {
+                        btConn.sendValue(i);
+                    }
+                }
             }
         }
     }
