@@ -82,12 +82,12 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
 
     private void drawWin() {
         graphicsContext.clear();
-        graphicsContext.drawString("YOU WIN!", 10, 10, graphicsContext.LEFT);
+        graphicsContext.drawString("YOU WIN!", 10, 10, Graphics.LEFT);
     }
 
     private void drawLose() {
         graphicsContext.clear();
-        graphicsContext.drawString("YOU LOSE!", 10, 10, graphicsContext.LEFT);
+        graphicsContext.drawString("YOU LOSE!", 10, 10, Graphics.LEFT);
     }
 
     private void checkField() {
@@ -111,11 +111,12 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
                 RConsole.println("Getting new value");
                 int val = btConn.getNextValue();
                 RConsole.println("New value: " + val);
-                if (fields[val - 1] == 1)
+                if (fields[val - 1] == 1) {
                     fields[val - 1] = -1;
                     ownTurn = true;
                     drawField();
                     checkField();
+                }
                 else {
                     RConsole.println("Opponent selects blocked field");
                     for (int i = 0; i < 200; ++i) {
@@ -169,23 +170,23 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     private void drawConnectionFinished() {
         RConsole.println("Drawing Connection finished");
         graphicsContext.clear();
-        graphicsContext.drawString("Connection", 10, 10, graphicsContext.LEFT);
-        graphicsContext.drawString("finished", 10, 30, graphicsContext.LEFT);
+        graphicsContext.drawString("Connection", 10, 10, Graphics.LEFT);
+        graphicsContext.drawString("finished", 10, 30, Graphics.LEFT);
     }
 
     private void drawWaitForConnection() {
         RConsole.println("Drawing Wait for connection");
         graphicsContext.clear();
-        graphicsContext.drawString("Waiting for", 10, 10, graphicsContext.LEFT);
-        graphicsContext.drawString("connection...", 10, 30, graphicsContext.LEFT);
+        graphicsContext.drawString("Waiting for", 10, 10, Graphics.LEFT);
+        graphicsContext.drawString("connection...", 10, 30, Graphics.LEFT);
     }
 
     private void drawMasterSlave() {
         RConsole.println("Drawing Master Slave");
         int fontHeight = graphicsContext.getFont().getHeight();
         graphicsContext.clear();
-        graphicsContext.drawString("Master", 20, 10, graphicsContext.LEFT);
-        graphicsContext.drawString("Slave", 20, 30, graphicsContext.LEFT);
+        graphicsContext.drawString("Master", 20, 10, Graphics.LEFT);
+        graphicsContext.drawString("Slave", 20, 30, Graphics.LEFT);
         graphicsContext.fillArc(3, 10 + (selectedIndex) * 20, fontHeight, fontHeight, 0, 360);
     }
 
@@ -194,13 +195,13 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
         int fontHeight = graphicsContext.getFont().getHeight();
         graphicsContext.clear();
         for (int i = 0; i < devices.size(); ++i) {
-            graphicsContext.drawString(devices.get(i).getFriendlyName(true), 20, 10 + i * (3 + fontHeight), graphicsContext.LEFT);
+            graphicsContext.drawString(devices.get(i).getFriendlyName(true), 20, 10 + i * (3 + fontHeight), Graphics.LEFT);
         }
         if (selectedIndex > -1) {
             graphicsContext.fillArc(3, 10 + selectedIndex * (3 + fontHeight), fontHeight, fontHeight, 0, 360);
         }
         else {
-            graphicsContext.drawString("No devices found!", 20, 10, graphicsContext.LEFT);
+            graphicsContext.drawString("No devices found!", 20, 10, Graphics.LEFT);
             try {Thread.sleep(1000);} catch (Exception e) {}
             mode = 0;
             selectedIndex = 0;
@@ -211,7 +212,7 @@ public class TicTacToe implements ButtonListener, BtNxt.BtListener {
     private void drawNoConnection() {
         RConsole.println("Drawing No connection");
         graphicsContext.clear();
-        graphicsContext.drawString("No Connection!", 10, 10, graphicsContext.LEFT);
+        graphicsContext.drawString("No Connection!", 10, 10, Graphics.LEFT);
         try {Thread.sleep(2000);} catch (Exception e) {}
         mode = 0;
         selectedIndex = 0;
