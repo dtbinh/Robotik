@@ -1,3 +1,4 @@
+import lejos.nxt.Button;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.SensorPort;
@@ -15,10 +16,17 @@ public class RegFollower {
 	private int lightColor;
 	private int targetColor;
 	
+	private int basespeed;
+	private int breakfactor;
+	
+	private boolean reset = false;
+	
 	private RegFollower() {
 		ls = new LightSensor(SensorPort.S4);
 		darkColor = 255;
 		lightColor = 0;
+		basespeed = 0;
+		breakfactor = 0;
 	}
 	
 	private void findColors() {
@@ -33,17 +41,66 @@ public class RegFollower {
         }
         targetColor = (darkColor + lightColor) / 2;
         RConsole.println("Min value: " + darkColor + " Max value: " + lightColor + " Average value: " + targetColor);
-        tempPilot.rotateLeft();
-        tempPilot.setRotateSpeed(36);
         RConsole.println("Finding target value...");
+        tempPilot.setRotateSpeed(36);
+        tempPilot.rotateLeft();
         while (ls.readValue() != targetColor);
         tempPilot.stop();
-        tempPilot = null;
 	}
 	
 	private boolean waitForBluetooth() {
 		conn = Bluetooth.waitForConnection(30000, NXTConnection.PACKET);
         return !(conn == null);
+	}
+	
+	private class FollowerThread extends Thread {
+		private boolean running = true;
+		
+		public void run() {
+			PIDRegulator reg = new PIDRegulator();
+			int regulation;
+			long t = System.currentTimeMillis();
+			int err;
+			int val;
+			// C = left motor, A = right motor
+			Motor.C.setSpeed(basespeed);
+			Motor.A.setSpeed(basespeed);
+			Motor.C.forward();
+			Motor.A.forward();
+			while (running)	{
+				val = ls.getLightValue();
+				err = targetColor - val;
+				regulation = (int) reg.calculate(targetColor, val, System.currentTimeMillis() - t, reset);
+				reset = false;
+				if (regulation > 0) {
+					Motor.C.setSpeed(basespeed - breakfactor * err);
+					Motor.A.setSpeed(basespeed - breakfactor * err - regulation);
+				}
+				else {
+					Motor.C.setSpeed(basespeed - breakfactor * err + regulation);
+					Motor.A.setSpeed(basespeed - breakfactor * err);
+				}
+				t = System.currentTimeMillis();
+			}
+			Motor.C.stop();
+			Motor.A.stop();
+		}
+		
+		public void stop() {
+			this.running = false;
+		}
+	}
+	
+	private void followLine() {
+		FollowerThread follower = new FollowerThread();
+		follower.start();
+		Button.ESCAPE.waitForPress();
+		follower.stop();
+		try {
+			follower.join();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void runMain() {
@@ -54,6 +111,7 @@ public class RegFollower {
 		else {
 			RConsole.println("No bluetooth device connected");
 		}
+		followLine();
 	}
 	
 	public static void main(String[] args) {
