@@ -2,15 +2,12 @@ import lejos.nxt.Button;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.SensorPort;
-import lejos.nxt.comm.BTConnection;
-import lejos.nxt.comm.Bluetooth;
-import lejos.nxt.comm.NXTConnection;
 import lejos.nxt.comm.RConsole;
 import lejos.robotics.navigation.DifferentialPilot;
 
 public class RegFollower {
 	private LightSensor ls;
-	private BTConnection conn;
+//	private BTConnection conn;
 	
 	private int darkColor;
 	private int lightColor;
@@ -19,14 +16,16 @@ public class RegFollower {
 	private int basespeed;
 	private int breakfactor;
 	
+	private long startTime;
+	
 	private boolean reset = false;
 	
 	private RegFollower() {
 		ls = new LightSensor(SensorPort.S4);
-		darkColor = 255;
+		darkColor = 1023;
 		lightColor = 0;
-		basespeed = 0;
-		breakfactor = 0;
+		basespeed = 360;
+		breakfactor = 10;
 	}
 	
 	private void findColors() {
@@ -35,7 +34,7 @@ public class RegFollower {
         tempPilot.rotate(360, true);
         RConsole.println("Starting calibration...");
         while (tempPilot.isMoving()) {
-        	int val = ls.readValue();
+        	int val = ls.readNormalizedValue();
         	if (val < darkColor) darkColor = val;
         	if (val > lightColor) lightColor = val;
         }
@@ -44,41 +43,75 @@ public class RegFollower {
         RConsole.println("Finding target value...");
         tempPilot.setRotateSpeed(36);
         tempPilot.rotateLeft();
-        while (ls.readValue() != targetColor);
+        while (ls.readNormalizedValue() != targetColor);
         tempPilot.stop();
 	}
 	
-	private boolean waitForBluetooth() {
-		conn = Bluetooth.waitForConnection(30000, NXTConnection.PACKET);
-        return !(conn == null);
-	}
+//	private boolean waitForBluetooth() {
+//		conn = Bluetooth.waitForConnection(30000, NXTConnection.PACKET);
+//        return !(conn == null);
+//	}
+	
+//	private class BluetoothThread extends Thread {
+//		private boolean running = true;
+//		DataInputStream in = conn.openDataInputStream();
+//		
+//		public void run() {
+//			while (running) {
+//				try {
+//					double kp = in.readDouble();
+//					double tn = in.readDouble();
+//					double tv = in.readDouble();
+//					int speed = in.readInt();
+//					int brake = in.readInt();
+//				} catch (IOException e) {
+//					e.printStackTrace();
+//				}
+//			}
+//		}
+//		
+//		public void stop() {
+//			running = false;
+//		}
+//	}
 	
 	private class FollowerThread extends Thread {
 		private boolean running = true;
 		
 		public void run() {
 			PIDRegulator reg = new PIDRegulator();
+			reg.setKp(1);
+			reg.setTn(5);
+			reg.setTv(0.2);
 			int regulation;
 			long t = System.currentTimeMillis();
+			
+			long lastPrint = 0;
+			
 			int err;
 			int val;
 			// C = left motor, A = right motor
+			startTime = System.currentTimeMillis();
 			Motor.C.setSpeed(basespeed);
 			Motor.A.setSpeed(basespeed);
 			Motor.C.forward();
 			Motor.A.forward();
 			while (running)	{
-				val = ls.getLightValue();
+				val = ls.readNormalizedValue();
 				err = targetColor - val;
 				regulation = (int) reg.calculate(targetColor, val, System.currentTimeMillis() - t, reset);
+				if (System.currentTimeMillis() - lastPrint > 5) {
+					lastPrint = System.currentTimeMillis();
+					RConsole.println((lastPrint - startTime) + ": val: " + val + " err: " + err + " reg: " + regulation);
+				}
 				reset = false;
 				if (regulation > 0) {
-					Motor.C.setSpeed(basespeed - breakfactor * err);
-					Motor.A.setSpeed(basespeed - breakfactor * err - regulation);
+					Motor.C.setSpeed(basespeed - breakfactor * Math.abs(err));
+					Motor.A.setSpeed(basespeed - breakfactor * Math.abs(err) - regulation);
 				}
 				else {
-					Motor.C.setSpeed(basespeed - breakfactor * err + regulation);
-					Motor.A.setSpeed(basespeed - breakfactor * err);
+					Motor.C.setSpeed(basespeed - breakfactor * Math.abs(err) + regulation);
+					Motor.A.setSpeed(basespeed - breakfactor * Math.abs(err));
 				}
 				t = System.currentTimeMillis();
 			}
@@ -93,11 +126,15 @@ public class RegFollower {
 	
 	private void followLine() {
 		FollowerThread follower = new FollowerThread();
+//		BluetoothThread bluetooth = new BluetoothThread();
 		follower.start();
+//		bluetooth.start();
 		Button.ESCAPE.waitForPress();
 		follower.stop();
+//		bluetooth.stop();
 		try {
 			follower.join();
+//			bluetooth.join();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -105,12 +142,12 @@ public class RegFollower {
 	
 	private void runMain() {
 		findColors();
-		if (waitForBluetooth()) {
-			RConsole.println("Bluetooth device found: " + conn.getAddress());
-		}
-		else {
-			RConsole.println("No bluetooth device connected");
-		}
+//		if (waitForBluetooth()) {
+//			RConsole.println("Bluetooth device found: " + conn.getAddress());
+//		}
+//		else {
+//			RConsole.println("No bluetooth device connected");
+//		}
 		followLine();
 	}
 	

@@ -26,8 +26,8 @@ public class PIDRegulator implements Regulator {
 	}
 	
 	private double integrate(double signal, double t, boolean reset) {
-		if (! reset ) {
-			this.int_integral += ((signal + this.int_last_signal) * t ) / 2;
+		if (!reset) {
+			this.int_integral += ((signal + this.int_last_signal) * t) / 2;
 			this.int_last_signal = signal;
 			return this.int_integral;
 		}
