@@ -2,9 +2,9 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.util.ArrayList;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-import javax.bluetooth.RemoteDevice;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -14,8 +14,10 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.ListSelectionListener;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
+import lejos.pc.comm.NXTInfo;
 
 public class ConnectDialog extends JDialog {
 
@@ -24,6 +26,8 @@ public class ConnectDialog extends JDialog {
 	 */
 	private static final long serialVersionUID = 1L;
 	private final JPanel contentPanel = new JPanel();
+	private JLabel lblStatus;
+	private DefaultListModel<String> listModel;
 	
 	private int selectedIndex;
 
@@ -49,7 +53,7 @@ public class ConnectDialog extends JDialog {
 		contentPanel.add(scrollPane, gbc_scrollPane);
 
 
-		DefaultListModel<String> listModel = new DefaultListModel<String>();
+		listModel = new DefaultListModel<String>();
 		JList<String> list = new JList<String>(listModel);
 		list.addListSelectionListener(new ListSelectionListener() {
 			public void valueChanged(ListSelectionEvent e) {
@@ -63,24 +67,44 @@ public class ConnectDialog extends JDialog {
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		getContentPane().add(buttonPane, BorderLayout.SOUTH);
 		
-		JLabel lblStatus = new JLabel("Connecting...");
+		lblStatus = new JLabel("Connecting...");
 		buttonPane.add(lblStatus);
 		
 		JButton okButton = new JButton("OK");
+		okButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				ConnectDialog.this.dispose();
+			}
+		});
+		
+		JButton btnSearch = new JButton("Search");
+		btnSearch.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				lblStatus.setText("Searching for devices...");
+				NXTInfo[] devices = parent.getDevices();
+				lblStatus.setText("Finished!");
+				for (NXTInfo d : devices) {
+					listModel.addElement(d.name);
+				}
+			}
+		});
+		buttonPane.add(btnSearch);
 		okButton.setActionCommand("OK");
 		buttonPane.add(okButton);
 		getRootPane().setDefaultButton(okButton);
 		
 		JButton cancelButton = new JButton("Cancel");
+		cancelButton.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				ConnectDialog.this.selectedIndex = -1;
+				ConnectDialog.this.dispose();
+			}
+		});
 		cancelButton.setActionCommand("Cancel");
 		buttonPane.add(cancelButton);
-		
-		lblStatus.setText("Searching for devices...");
-		ArrayList<RemoteDevice> devices = parent.getDevices();
-		lblStatus.setText("Finished!");
-		for (RemoteDevice d : devices) {
-			listModel.addElement(d.getFriendlyName(false));
-		}
 	}
 
 	public int getIndex() {

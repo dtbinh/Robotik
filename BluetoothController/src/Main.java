@@ -6,11 +6,9 @@ import java.awt.Insets;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.OutputStream;
 
-import javax.bluetooth.RemoteDevice;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -19,20 +17,22 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
-import lejos.nxt.comm.BTConnection;
-import lejos.nxt.comm.Bluetooth;
+import lejos.pc.comm.NXTComm;
+import lejos.pc.comm.NXTCommFactory;
+import lejos.pc.comm.NXTConnector;
+import lejos.pc.comm.NXTInfo;
 
 public class Main {
 
 	private JFrame frame;
-	private BTConnection conn;
-	private ArrayList<RemoteDevice> devices;
+	private NXTConnector conn;
+	private NXTInfo[] devices;
 	
 	private JButton btnSubmit;
 	private JButton btnExit;
 	private JButton btnConnect;
 	
-	DataOutputStream out;
+	OutputStream out;
 
 	/**
 	 * Launch the application.
@@ -57,8 +57,8 @@ public class Main {
 		initialize();
 	}
 	
-	public ArrayList<RemoteDevice> getDevices(){
-		this.devices = Bluetooth.inquire(1, 5, 0);
+	public NXTInfo[] getDevices(){
+		this.devices = conn.search(null, null, NXTCommFactory.BLUETOOTH);
 		return this.devices;
 	}
 
@@ -66,6 +66,8 @@ public class Main {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
+		conn = new NXTConnector();
+		
 		frame = new JFrame();
 		frame.setBounds(100, 100, 450, 220);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -182,8 +184,8 @@ public class Main {
 				if (index == -1) {
 					return;
 				}
-				conn = Bluetooth.connect(Main.this.devices.get(index));
-				out = conn.openDataOutputStream();
+				conn.connectTo(Main.this.devices[index], NXTComm.PACKET);
+				out = conn.getOutputStream();
 				btnConnect.setEnabled(false);
 				btnSubmit.setEnabled(true);
 			}
@@ -195,11 +197,11 @@ public class Main {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				try {
-					out.writeDouble((double) spKp.getValue());
-					out.writeDouble((double) spTn.getValue());
-					out.writeDouble((double) spTv.getValue());
-					out.writeInt((int) spSpeed.getValue());
-					out.writeInt((int) spBrake.getValue());
+					out.write(String.format("%f", (double)spKp.getValue()).getBytes());
+					out.write(String.format("%f", (double)spTv.getValue()).getBytes());
+					out.write(String.format("%f", (double)spTn.getValue()).getBytes());
+					out.write(String.format("%d", (int)spSpeed.getValue()).getBytes());
+					out.write(String.format("%d", (int)spBrake.getValue()).getBytes());
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}
@@ -213,7 +215,11 @@ public class Main {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (conn != null) {
-					conn.close();
+					try {
+						conn.close();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
 				}
 				frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
 			}
