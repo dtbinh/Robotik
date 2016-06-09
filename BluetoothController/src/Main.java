@@ -7,7 +7,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -26,13 +26,12 @@ public class Main {
 
 	private JFrame frame;
 	private NXTConnector conn;
+	private NXTComm comm;
 	private NXTInfo[] devices;
 	
 	private JButton btnSubmit;
 	private JButton btnExit;
 	private JButton btnConnect;
-	
-	OutputStream out;
 
 	/**
 	 * Launch the application.
@@ -138,7 +137,7 @@ public class Main {
 		frame.getContentPane().add(lblBasespeed, gbc_lblBasespeed);
 		
 		JSpinner spSpeed = new JSpinner();
-		spSpeed.setModel(new SpinnerNumberModel(new Integer(0), new Integer(0), null, new Integer(1)));
+		spSpeed.setModel(new SpinnerNumberModel(new Double(0), new Double(0), null, new Double(1)));
 		GridBagConstraints gbc_spSpeed = new GridBagConstraints();
 		gbc_spSpeed.fill = GridBagConstraints.HORIZONTAL;
 		gbc_spSpeed.insets = new Insets(5, 5, 5, 0);
@@ -155,7 +154,7 @@ public class Main {
 		frame.getContentPane().add(lblBrakefactor, gbc_lblBrakefactor);
 		
 		JSpinner spBrake = new JSpinner();
-		spBrake.setModel(new SpinnerNumberModel(new Integer(0), new Integer(0), null, new Integer(1)));
+		spBrake.setModel(new SpinnerNumberModel(new Double(0), new Double(0), null, new Double(1)));
 		GridBagConstraints gbc_spBrake = new GridBagConstraints();
 		gbc_spBrake.insets = new Insets(5, 5, 5, 0);
 		gbc_spBrake.fill = GridBagConstraints.HORIZONTAL;
@@ -185,7 +184,7 @@ public class Main {
 					return;
 				}
 				conn.connectTo(Main.this.devices[index], NXTComm.PACKET);
-				out = conn.getOutputStream();
+				comm = conn.getNXTComm();
 				btnConnect.setEnabled(false);
 				btnSubmit.setEnabled(true);
 			}
@@ -197,11 +196,11 @@ public class Main {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				try {
-					out.write(String.format("%f", (double)spKp.getValue()).getBytes());
-					out.write(String.format("%f", (double)spTv.getValue()).getBytes());
-					out.write(String.format("%f", (double)spTn.getValue()).getBytes());
-					out.write(String.format("%d", (int)spSpeed.getValue()).getBytes());
-					out.write(String.format("%d", (int)spBrake.getValue()).getBytes());
+					comm.write(String.format(Locale.US, "kp%08.5f", (double)spKp.getValue()).getBytes());
+					comm.write(String.format(Locale.US, "tv%08.5f", (double)spTv.getValue()).getBytes());
+					comm.write(String.format(Locale.US, "tn%08.5f", (double)spTn.getValue()).getBytes());
+					comm.write(String.format(Locale.US, "sp%08.5f", (double)spSpeed.getValue()).getBytes());
+					comm.write(String.format(Locale.US, "br%08.5f", (double)spBrake.getValue()).getBytes());
 				} catch (IOException e1) {
 					e1.printStackTrace();
 				}

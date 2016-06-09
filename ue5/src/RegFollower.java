@@ -2,6 +2,7 @@ import lejos.nxt.Button;
 import lejos.nxt.LightSensor;
 import lejos.nxt.Motor;
 import lejos.nxt.SensorPort;
+import lejos.nxt.UltrasonicSensor;
 import lejos.nxt.comm.BTConnection;
 import lejos.nxt.comm.Bluetooth;
 import lejos.nxt.comm.NXTConnection;
@@ -10,6 +11,7 @@ import lejos.robotics.navigation.DifferentialPilot;
 
 public class RegFollower {
 	private LightSensor ls;
+	private UltrasonicSensor us;
 	private BTConnection conn;
 	
 	private int darkColor;
@@ -22,9 +24,11 @@ public class RegFollower {
 	private long startTime;
 	
 	private boolean reset = false;
+	private PIDRegulator reg = new PIDRegulator(0, 0, 0);
 	
 	private RegFollower() {
-		ls = new LightSensor(SensorPort.S4);
+		ls = new LightSensor(SensorPort.S1);
+		us = new UltrasonicSensor(SensorPort.S4);
 		darkColor = 1023;
 		lightColor = 0;
 		basespeed = 0;
@@ -57,21 +61,35 @@ public class RegFollower {
 	
 	private class BluetoothThread extends Thread {
 		private boolean running = true;
-		byte[] in = new byte[8];
+		private byte[] in = new byte[10];
+		private int len;
 		
 		public void run() {
-			while (running) {
-				conn.read(in, 8);
-				double kp = Double.parseDouble(new String(in));
-				conn.read(in, 8);
-				double tv = Double.parseDouble(new String(in));
-				conn.read(in, 8);
-				double tn = Double.parseDouble(new String(in));
-				conn.read(in, 8);
-				int speed = Integer.parseInt(new String(in));
-				conn.read(in, 8);
-				int brake = Integer.parseInt(new String(in));
-				RConsole.println(kp + " " + tv + " " + tn + " " + speed + " " + brake);
+			while (running && len >= 0) {
+				double val;
+				len = conn.read(in, 10);
+				String inp = new String(in);
+				val = Double.parseDouble(inp.substring(2));
+				if (inp.startsWith("kp")) {
+					reg.setKp(val);
+					RConsole.println("Received Kp=" + val);
+				}
+				else if (inp.startsWith("tv")) {
+					reg.setTv(val);
+					RConsole.println("Received Tv=" + val);
+				}
+				else if (inp.startsWith("tn")) {
+					reg.setTn(val);
+					RConsole.println("Received Tn=" + val);
+				}
+				else if (inp.startsWith("sp")) {
+					basespeed = (int) val;
+					RConsole.println("Received Sp=" + val);
+				}
+				else if (inp.startsWith("br")) {
+					breakfactor = (int) val;
+					RConsole.println("Received Br=" + val);
+				}
 			}
 		}
 		
@@ -84,10 +102,6 @@ public class RegFollower {
 		private boolean running = true;
 		
 		public void run() {
-			PIDRegulator reg = new PIDRegulator();
-			reg.setKp(0);
-			reg.setTn(0);
-			reg.setTv(0);
 			int regulation;
 			long t = System.currentTimeMillis();
 			
@@ -95,6 +109,8 @@ public class RegFollower {
 			
 			int err;
 			int val;
+			int distance;
+			float distanceFactor;
 			// C = left motor, A = right motor
 			startTime = System.currentTimeMillis();
 			Motor.C.setSpeed(basespeed);
@@ -103,28 +119,28 @@ public class RegFollower {
 			Motor.A.forward();
 			while (running)	{
 				val = ls.readNormalizedValue();
+				distance = us.getDistance();
+				distanceFactor = Math.max(0, Math.min(distance, 40) - 25) / 15.0f;
 				err = targetColor - val;
 				regulation = (int) reg.calculate(targetColor, val, (System.currentTimeMillis() - t) / 1000., reset);
-				try {
-					Thread.sleep(2);
-				}
-				catch (Exception e) {
-					
-				}
 				reset = false;
 				if (regulation > 0) {
-					Motor.C.setSpeed(basespeed - breakfactor * Math.abs(err));
-					Motor.A.setSpeed(basespeed - breakfactor * Math.abs(err) - regulation);
+					Motor.C.setSpeed(distanceFactor * Math.max(basespeed - breakfactor * Math.abs(err), 0));
+					Motor.A.setSpeed(distanceFactor * Math.max(basespeed - breakfactor * Math.abs(err) - regulation, 0));
 				}
 				else {
-					Motor.C.setSpeed(basespeed - breakfactor * Math.abs(err) + regulation);
-					Motor.A.setSpeed(basespeed - breakfactor * Math.abs(err));
+					Motor.C.setSpeed(distanceFactor * Math.max(basespeed - breakfactor * Math.abs(err) + regulation, 0));
+					Motor.A.setSpeed(distanceFactor * Math.max(basespeed - breakfactor * Math.abs(err), 0));
 				}
+				Motor.C.forward();
+				Motor.A.forward();
 				t = System.currentTimeMillis();
-//				if (System.currentTimeMillis() - lastPrint > 200) {
-//					lastPrint = t;
-//					RConsole.println((lastPrint - startTime) + ": val: " + val + " err: " + err + " reg: " + regulation + " A: " + Motor.A.getSpeed() + " B: " + Motor.B.getSpeed());
-//				}
+				if (System.currentTimeMillis() - lastPrint > 200) {
+					lastPrint = t;
+					RConsole.println((lastPrint - startTime) + ":\tval: " + val + "\terr: " + err + "\treg: " + regulation +
+							"\tA: " + Motor.A.getSpeed() + "\tC: " + Motor.C.getSpeed() + "\tint: " + reg.getIntegral() +
+							"\tdistance: " + distance + "\tdistFactor " + distanceFactor);
+				}
 			}
 			Motor.C.stop();
 			Motor.A.stop();
@@ -141,8 +157,8 @@ public class RegFollower {
 		follower.start();
 		bluetooth.start();
 		Button.ESCAPE.waitForPress();
-		follower.stop();
 		bluetooth.stop();
+		follower.stop();
 		try {
 			follower.join();
 			bluetooth.join();
